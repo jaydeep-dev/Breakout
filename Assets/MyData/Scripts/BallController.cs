@@ -12,7 +12,7 @@ public class BallController : MonoBehaviour
     private Rigidbody2D rb;
     private SpriteRenderer spriteRenderer;
     private Vector2 lastVelocity;
-    private Vector2 spawnPos;
+    private Vector3 spawnPos;
     private bool applySpeedCheck;
 
     private ScoresManager scoresManager;
@@ -27,7 +27,7 @@ public class BallController : MonoBehaviour
 
     private void Start()
     {
-        spawnPos = transform.position;
+        spawnPos = transform.localPosition;
         scoresManager = FindObjectOfType<ScoresManager>();
     }
 
@@ -40,10 +40,6 @@ public class BallController : MonoBehaviour
     {
         if (applySpeedCheck)
         {
-            if (lastVelocity == Vector2.zero)
-            {
-                ThrowBall();
-            }
             rb.velocity = lastVelocity * ballForce;
             rb.velocity = Vector2.ClampMagnitude(rb.velocity, ballForce);
         }
@@ -72,11 +68,18 @@ public class BallController : MonoBehaviour
 
     private void ResetBall()
     {
-        rb.position = spawnPos;
+        Debug.Log("Reset Ball");
+        lastVelocity = rb.velocity = Vector3.zero;
+        if (paddleController)
+            transform.SetParent(paddleController.transform, false);
+        else
+            Destroy(gameObject);
+        transform.localPosition = spawnPos;
     }
 
     public void ThrowBall()
     {
+        transform.SetParent(null);  
         var xDirection = Random.Range(-1f, 1f);
         var yDirection = 1f;
         Vector2 force = new Vector2(xDirection , yDirection).normalized * ballForce;
@@ -85,5 +88,20 @@ public class BallController : MonoBehaviour
         Debug.Log("Ball's Dir: " + force);
 
         applySpeedCheck = true; // Make sure this is the last line so after setting the velocity the fixed update starts velocity checks
+    }
+
+    public void SpawnBalls()
+    {
+        // aay badha ball mathi spawn karava na
+        BallController[] balls = FindObjectsOfType<BallController>();
+        Debug.Log("Existing Ball Count : " + balls.Length);
+        foreach (var ball in balls)
+        {
+            var ball1 = Instantiate(gameObject, ball.transform.position, Quaternion.identity);
+            var ball2 = Instantiate(gameObject, ball.transform.position, Quaternion.identity);
+
+            ball1.GetComponent<BallController>().ThrowBall();
+            ball2.GetComponent<BallController>().ThrowBall();
+        }
     }
 }
